@@ -1390,6 +1390,12 @@ public:
         return call_support<BaseType, DiffArray>(*this);
     }
 
+    template<
+            class U = Type, 
+            class = std::enable_if_t<std::is_convertible_v<U, bool>>
+            >
+    operator bool() const { return m_value; }
+
 private:
     ENOKI_INLINE static Tape* tape() { return Tape::get(); }
 

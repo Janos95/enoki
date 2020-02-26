@@ -311,14 +311,18 @@ elseif (MSVC)
 endif()
 
 if (ENOKI_AUTODIFF)
-  add_definitions(-DENOKI_AUTODIFF=1)
-  add_library(enoki-autodiff SHARED
+  add_library(autodiff SHARED
       ${PROJECT_SOURCE_DIR}/include/enoki/autodiff.h
       ${PROJECT_SOURCE_DIR}/src/autodiff/autodiff.cpp
   )
-  target_compile_definitions(enoki-autodiff PRIVATE -DENOKI_AUTODIFF_BUILD=1)
+  target_compile_definitions(autodiff 
+	  PUBLIC ENOKI_AUTODIFF
+	  PRIVATE ENOKI_AUTODIFF_BUILD)
+  target_include_directories(autodiff PUBLIC 
+	  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:include>)
   if (ENOKI_CUDA)
-      target_link_libraries(enoki-autodiff PRIVATE enoki-cuda)
+      target_link_libraries(autodiff PRIVATE enoki-cuda)
   endif()
   message(STATUS "Enoki: building the autodiff backend.")
 endif()
@@ -419,7 +423,7 @@ if (ENOKI_PYTHON)
         src/python/cuda_autodiff_complex.cpp
         src/python/cuda_autodiff_matrix.cpp
     )
-    target_link_libraries(enoki-python-cuda-autodiff PRIVATE enoki-autodiff enoki-cuda cuda)
+    target_link_libraries(enoki-python-cuda-autodiff PRIVATE autodiff enoki-cuda cuda)
     set(ENOKI_PYTHON_TARGETS ${ENOKI_PYTHON_TARGETS} cuda-autodiff)
   endif()
 
@@ -477,3 +481,24 @@ mark_as_advanced(
   Eigen3_DIR PYBIND11_INSTALL PYBIND11_PYTHON_VERSION PYBIND11_TEST
   PYBIND11_WERROR USE_PYTHON_INCLUDE_DIR
 )
+
+
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
+install(TARGETS autodiff EXPORT EnokiTargets
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+
+install(EXPORT EnokiTargets
+		FILE EnokiTargets.cmake
+        NAMESPACE enoki::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/enoki
+        )
+
+install(FILES "EnokiConfig.cmake" 
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/enoki)
+
+	
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/enoki DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
